@@ -1,0 +1,24 @@
+# Artefacts de traitement et de test : volumes intermediaires, captures,
+# caches, donnees telechargees. Le site statique ne les contient pas.
+
+cache/
+capture/
+meteo/
+outputs/
+
+__pycache__/
+*.pyc
+
+*.parquet
+*.gpkg
+*.nc
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+
+# Captures d'ecran et vidéos de test.
+*.png
+!vendor/images/*.png
+*.mp4

@@ -1,0 +1,447 @@
+/* ==========================================================================
+   Carte médicale — feuille de style unique
+   Palette : bleu médical profond, cyan d'accent, blanc et gris très clair.
+   Le rouge est réservé aux urgences, le vert à la garde, l'orange à ce qui
+   doit être lu mais n'est pas critique. Aucune information critique ne repose
+   sur la seule couleur : icône + libellé l'accompagnent toujours.
+   ========================================================================== */
+
+:root {
+  --bleu-950: #062338;
+  --bleu-900: #0b3c5d;
+  --bleu-700: #12608f;
+  --bleu-500: #2f7fc1;
+  --cyan-500: #00a9ce;
+  --cyan-100: #e0f6fb;
+
+  --blanc: #ffffff;
+  --gris-50: #f7f9fb;
+  --gris-100: #eef2f6;
+  --gris-200: #dfe6ed;
+  --gris-400: #9fb0c0;
+  --gris-600: #5b6b7c;
+  --gris-800: #33404f;
+
+  --rouge: #dc2626;
+  --rouge-clair: #fdeaea;
+  --vert: #16a34a;
+  --vert-clair: #e6f6ec;
+  --orange: #f59e0b;
+  --violet: #7c3aed;
+
+  --rayon: 14px;
+  --rayon-s: 9px;
+  --ombre-1: 0 1px 2px rgba(6, 35, 56, .06), 0 2px 8px rgba(6, 35, 56, .06);
+  --ombre-2: 0 4px 12px rgba(6, 35, 56, .10), 0 12px 32px rgba(6, 35, 56, .10);
+  --ombre-3: 0 8px 24px rgba(6, 35, 56, .14), 0 24px 60px rgba(6, 35, 56, .14);
+
+  --transition: 180ms cubic-bezier(.4, 0, .2, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+  color: var(--gris-800);
+  background: var(--gris-50);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid var(--cyan-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button { font: inherit; cursor: pointer; }
+
+/* ------------------------------------------------------------------ */
+/* Structure                                                          */
+/* ------------------------------------------------------------------ */
+.appli {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr 372px;
+  grid-template-areas: "entete entete" "carte panneau";
+  height: 100vh;
+  height: 100dvh;
+}
+
+.entete {
+  grid-area: entete;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 20px;
+  background: var(--bleu-950);
+  color: #fff;
+  z-index: 900;
+}
+
+.marque { display: flex; align-items: center; gap: 11px; }
+.marque-logo {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  background: linear-gradient(140deg, var(--cyan-500), var(--bleu-700));
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+}
+.marque-titre { font-size: 15.5px; font-weight: 650; letter-spacing: -.01em; line-height: 1.15; }
+.marque-sous { font-size: 11.5px; color: #8fa8bd; }
+
+.recherche-bloc { flex: 1; position: relative; max-width: 520px; min-width: 0; }
+.recherche-bloc .loupe {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--gris-400); pointer-events: none; font-size: 15px;
+}
+#recherche {
+  width: 100%; padding: 11px 14px 11px 38px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  background: rgba(255,255,255,.09);
+  color: #fff; font-size: 14.5px;
+  transition: var(--transition);
+}
+#recherche::placeholder { color: #93a9bd; }
+#recherche:focus { background: rgba(255,255,255,.15); border-color: var(--cyan-500); outline: none; }
+
+.resultats {
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+  background: var(--blanc); border-radius: 12px; box-shadow: var(--ombre-3);
+  overflow: hidden; display: none; z-index: 1000;
+  max-height: 380px; overflow-y: auto;
+}
+.resultats.ouvert { display: block; }
+.resultat {
+  display: flex; gap: 11px; align-items: center; width: 100%;
+  padding: 11px 14px; border: 0; background: none; text-align: left;
+  border-bottom: 1px solid var(--gris-100);
+}
+.resultat:last-child { border-bottom: 0; }
+.resultat:hover, .resultat.survol { background: var(--cyan-100); }
+.resultat-ic { color: var(--bleu-700); font-size: 16px; }
+.resultat-corps { display: flex; flex-direction: column; min-width: 0; }
+.resultat-nom { font-weight: 550; font-size: 14px; color: var(--bleu-900); }
+.resultat-detail { font-size: 12.5px; color: var(--gris-600); }
+
+.entete-droite { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.etat-donnees { font-size: 12.5px; color: #8fa8bd; }
+.etat-donnees.erreur { color: #fca5a5; }
+
+/* ------------------------------------------------------------------ */
+/* Carte                                                              */
+/* ------------------------------------------------------------------ */
+.zone-carte { grid-area: carte; position: relative; }
+#carte { position: absolute; inset: 0; background: var(--gris-100); }
+
+.controles-carte {
+  position: absolute; right: 14px; bottom: 24px;
+  display: flex; flex-direction: column; gap: 8px; z-index: 500;
+}
+.controle {
+  width: 42px; height: 42px; display: grid; place-items: center;
+  border: 1px solid var(--gris-200); border-radius: 11px;
+  background: rgba(255,255,255,.94); backdrop-filter: blur(10px);
+  box-shadow: var(--ombre-1); font-size: 17px; color: var(--bleu-900);
+  transition: var(--transition);
+}
+.controle:hover { background: #fff; border-color: var(--cyan-500); color: var(--cyan-500); transform: translateY(-1px); }
+
+.filtres {
+  position: absolute; top: 14px; left: 14px; z-index: 500;
+  display: flex; gap: 8px; flex-wrap: wrap; max-width: calc(100% - 28px);
+}
+.filtres button {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 15px; border-radius: 999px;
+  border: 1px solid var(--gris-200);
+  background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
+  box-shadow: var(--ombre-1);
+  font-size: 13.5px; font-weight: 500; color: var(--gris-800);
+  transition: var(--transition);
+}
+.filtres button:hover:not(:disabled) { border-color: var(--cyan-500); transform: translateY(-1px); box-shadow: var(--ombre-2); }
+.filtres button.actif { background: var(--bleu-900); border-color: var(--bleu-900); color: #fff; }
+.filtres button:disabled { opacity: .48; cursor: not-allowed; text-decoration: line-through; }
+.filtres button[data-filtre="urgences"].actif { background: var(--rouge); border-color: var(--rouge); }
+.filtres button[data-filtre="garde"].actif { background: var(--vert); border-color: var(--vert); }
+.note-desactive {
+  flex-basis: 100%; margin: 0; max-width: 330px;
+  padding: 8px 12px; font-size: 11.5px; line-height: 1.45; color: var(--gris-600);
+  background: rgba(255,255,255,.96); border-left: 3px solid var(--orange);
+  border-radius: var(--rayon-s); box-shadow: var(--ombre-1);
+}
+
+.bouton-position {
+  position: absolute; right: 14px; top: 14px; z-index: 500;
+}
+.bouton-position button {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 18px; border-radius: 999px; border: 0;
+  background: var(--cyan-500); color: #fff; font-weight: 600; font-size: 13.5px;
+  box-shadow: var(--ombre-2); transition: var(--transition);
+}
+.bouton-position button:hover { background: #0092b2; transform: translateY(-1px); box-shadow: var(--ombre-3); }
+
+#infobulle {
+  position: fixed; z-index: 1200; pointer-events: none;
+  display: none; flex-direction: column; gap: 2px;
+  padding: 9px 13px; border-radius: 10px;
+  background: var(--bleu-950); color: #fff; box-shadow: var(--ombre-2);
+  font-size: 12.5px; max-width: 230px;
+}
+#infobulle.visible { display: flex; }
+#infobulle b { font-size: 13px; font-weight: 600; }
+#infobulle span { color: #9db6cb; }
+
+.leaflet-container { font-family: inherit; }
+.commune-polygone { transition: fill-opacity 160ms ease; }
+.leaflet-interactive { cursor: pointer; }
+
+/* ------------------------------------------------------------------ */
+/* Panneau latéral                                                    */
+/* ------------------------------------------------------------------ */
+.panneau {
+  grid-area: panneau;
+  display: flex; flex-direction: column;
+  background: var(--blanc);
+  border-left: 1px solid var(--gris-200);
+  overflow: hidden;
+}
+
+.tableau-bord { padding: 16px 18px 14px; border-bottom: 1px solid var(--gris-100); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stat {
+  background: var(--gris-50); border-radius: var(--rayon-s);
+  padding: 10px 8px; text-align: center;
+  border: 1px solid var(--gris-100);
+}
+.stat.indisponible { opacity: .55; }
+.stat b { display: block; font-size: 19px; font-weight: 650; color: var(--bleu-900); line-height: 1.15; }
+.stat span { font-size: 10.5px; color: var(--gris-600); text-transform: uppercase; letter-spacing: .04em; }
+.stat--urgence b { color: var(--rouge); }
+.stat--garde b { color: var(--vert); }
+
+.zone-filtres-mobile {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 18px; border-bottom: 1px solid var(--gris-100);
+}
+.zone-filtres-mobile label { font-size: 12.5px; color: var(--gris-600); }
+#rayon {
+  padding: 6px 9px; border: 1px solid var(--gris-200);
+  border-radius: 7px; background: #fff; font: inherit; font-size: 13px;
+}
+
+.compteur { padding: 11px 18px 8px; font-size: 12.5px; color: var(--gris-600); }
+
+.liste { flex: 1; overflow-y: auto; padding: 0 10px 20px; }
+.ligne-hopital {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 11px 10px; border: 0; border-radius: var(--rayon-s);
+  background: none; text-align: left; transition: var(--transition);
+}
+.ligne-hopital:hover { background: var(--gris-50); }
+.ligne-hopital.plus-proche { background: var(--cyan-100); box-shadow: inset 3px 0 0 var(--cyan-500); }
+.ligne-point { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.ligne-point.hopital { background: var(--bleu-500); }
+.ligne-point.urgence { background: var(--rouge); box-shadow: 0 0 0 3px var(--rouge-clair); }
+.ligne-point.garde { background: var(--vert); box-shadow: 0 0 0 3px var(--vert-clair); }
+.ligne-point.urgenceGarde { background: linear-gradient(135deg, var(--rouge), var(--vert)); }
+.ligne-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ligne-nom { font-size: 13.5px; font-weight: 550; color: var(--bleu-900); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ligne-meta { font-size: 12px; color: var(--gris-600); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ligne-distance { font-size: 13px; font-weight: 650; color: var(--bleu-900); white-space: nowrap; }
+
+.vide { padding: 16px 10px; color: var(--gris-600); font-size: 13px; text-align: center; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.badge--urgence { background: var(--rouge-clair); color: #a31515; }
+.badge--garde { background: var(--vert-clair); color: #14683a; }
+.badge--proche { background: var(--cyan-100); color: #046b85; }
+.badge--neutre { background: var(--gris-100); color: var(--gris-600); }
+
+/* Fiches et panneaux flottants */
+.volet {
+  position: fixed; z-index: 1100;
+  background: rgba(255,255,255,.96); backdrop-filter: blur(16px);
+  border-radius: var(--rayon); box-shadow: var(--ombre-3);
+  opacity: 0; visibility: hidden; transform: translateY(10px);
+  transition: var(--transition);
+}
+.volet.ouvert { opacity: 1; visibility: visible; transform: translateY(0); }
+.volet .fermer {
+  position: absolute; top: 10px; right: 10px;
+  width: 28px; height: 28px; border: 0; border-radius: 7px;
+  background: var(--gris-100); color: var(--gris-600); font-size: 15px;
+}
+.volet .fermer:hover { background: var(--gris-200); color: var(--bleu-900); }
+.volet h3 { margin: 0 0 3px; font-size: 16px; color: var(--bleu-900); padding-right: 34px; }
+.volet h4 { margin: 16px 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--gris-600); }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+
+#fiche-hopital { right: 20px; bottom: 20px; width: 350px; padding: 18px; max-height: 72vh; overflow-y: auto; }
+.fiche-dl { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.fiche-ligne { display: flex; gap: 10px; align-items: flex-start; }
+.fiche-ligne .ic { width: 16px; color: var(--gris-400); font-size: 13px; margin-top: 2px; }
+.fiche-ligne dt { font-size: 11px; color: var(--gris-600); text-transform: uppercase; letter-spacing: .04em; }
+.fiche-ligne dd { margin: 1px 0 0; font-size: 13.5px; color: var(--gris-800); }
+.fiche-distance { padding: 11px 0; font-size: 17px; font-weight: 650; color: var(--bleu-900); border-top: 1px solid var(--gris-100); }
+
+.btn {
+  display: block; width: 100%; margin-top: 9px; padding: 12px 16px;
+  border-radius: 10px; border: 0; font-weight: 600; font-size: 14px;
+  text-align: center; text-decoration: none;
+  transition: var(--transition);
+}
+.btn--principal { background: var(--cyan-500); color: #fff; }
+.btn--principal:hover { background: #0092b2; transform: translateY(-1px); box-shadow: var(--ombre-2); }
+.btn--secondaire { background: var(--gris-100); color: var(--bleu-900); }
+.btn--secondaire:hover { background: var(--gris-200); }
+
+#panneau-proche { left: 20px; bottom: 20px; width: 330px; padding: 18px; }
+.proche-distance { font-size: 22px; font-weight: 700; color: var(--bleu-900); margin: 6px 0 2px; }
+
+#panneau-itineraire { right: 20px; top: 76px; width: 330px; padding: 18px; }
+.route-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--cyan-500); font-weight: 650; }
+.route-raison { font-size: 12px; color: var(--orange); margin: 6px 0 0; }
+.route-mesures { display: flex; gap: 16px; margin: 10px 0 4px; font-size: 14.5px; font-weight: 600; color: var(--bleu-900); }
+.modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
+.modes button {
+  padding: 9px 4px; border: 1px solid var(--gris-200); border-radius: 9px;
+  background: #fff; font-size: 12px; font-weight: 550; color: var(--gris-800);
+  transition: var(--transition);
+}
+.modes button:hover { border-color: var(--cyan-500); }
+.modes button.actif { background: var(--bleu-900); border-color: var(--bleu-900); color: #fff; }
+
+#fiche-commune { right: 20px; top: 76px; width: 370px; padding: 18px; max-height: 70vh; overflow-y: auto; }
+.commune-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--cyan-500); font-weight: 650; }
+.commune-meta { font-size: 12.5px; color: var(--gris-600); }
+.commune-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 4px; }
+.commune-stats div { background: var(--gris-50); border: 1px solid var(--gris-100); border-radius: var(--rayon-s); padding: 10px 6px; text-align: center; }
+.commune-stats b { display: block; font-size: 18px; color: var(--bleu-900); }
+.commune-stats span { font-size: 10.5px; color: var(--gris-600); }
+.commune-hopitaux { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.commune-hopitaux button {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 8px 9px; border: 0; border-radius: 7px; background: none;
+  font-size: 13px; text-align: left; color: var(--gris-800);
+}
+.commune-hopitaux button:hover { background: var(--gris-50); }
+
+/* ------------------------------------------------------------------ */
+/* États                                                              */
+/* ------------------------------------------------------------------ */
+#chargement {
+  position: fixed; inset: 0; z-index: 2000;
+  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  background: linear-gradient(160deg, var(--bleu-950), var(--bleu-900));
+  color: #fff;
+}
+#chargement.actif { display: flex; }
+.squelette { width: 46px; height: 46px; border-radius: 14px; background: rgba(255,255,255,.09); position: relative; overflow: hidden; }
+.squelette::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+  animation: balayage 1.25s infinite;
+}
+@keyframes balayage { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+#chargement-texte { font-size: 14.5px; color: #b9cddd; letter-spacing: .01em; }
+
+#notifications {
+  position: fixed; bottom: 20px; left: 20px; z-index: 2200;
+  display: flex; flex-direction: column; gap: 9px; max-width: 380px;
+}
+.notification {
+  padding: 12px 15px; border-radius: 11px; font-size: 13.5px;
+  background: rgba(255,255,255,.97); backdrop-filter: blur(12px);
+  box-shadow: var(--ombre-2); border-left: 4px solid var(--cyan-500);
+  animation: entree 260ms cubic-bezier(.4,0,.2,1);
+}
+.notification--erreur { border-left-color: var(--rouge); }
+.notification--succes { border-left-color: var(--vert); }
+.notification--info { border-left-color: var(--bleu-500); }
+.notification.sortie { opacity: 0; transform: translateX(20px); transition: var(--transition); }
+@keyframes entree { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                         */
+/* ------------------------------------------------------------------ */
+@media (max-width: 1180px) {
+  .appli { grid-template-columns: 1fr 330px; }
+}
+
+@media (max-width: 900px) {
+  /* Aucun débordement horizontal. `1fr` prend une taille min-content : sans
+     `minmax(0, 1fr)`, un enfant large élargit la colonne et décale tout ce qui
+     est ancré à droite (le bouton de localisation sortait du cadre). */
+  html, body { overflow-x: hidden; max-width: 100%; }
+  .appli {
+    width: 100%;
+    max-width: 100vw;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "entete" "carte";
+  }
+  .entete, .zone-carte, .marque { min-width: 0; }
+  .entete > *, .zone-carte > * { max-width: 100%; }
+  .bouton-position button { white-space: nowrap; }
+  .panneau {
+    position: fixed; inset: auto 0 0 0; z-index: 1050;
+    height: 46vh; border-left: 0; border-top: 1px solid var(--gris-200);
+    border-radius: 18px 18px 0 0; box-shadow: var(--ombre-3);
+    transform: translateY(100%); transition: transform 260ms cubic-bezier(.4,0,.2,1);
+  }
+  .panneau.ouvert { transform: translateY(0); }
+  .panneau::before {
+    content: ''; display: block; width: 38px; height: 4px; margin: 9px auto 3px;
+    background: var(--gris-200); border-radius: 3px;
+  }
+  .entete { gap: 10px; padding: 10px 12px; }
+  .marque-sous, .etat-donnees { display: none; }
+
+  /* Les filtres prennent toute la largeur et défilent ; le bouton de
+     localisation passe en dessous, pour ne rien recouvrir. */
+  .filtres {
+    top: 10px; left: 10px; right: 10px; max-width: none;
+    flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .filtres::-webkit-scrollbar { display: none; }
+  .filtres button { white-space: nowrap; flex: none; }
+  .bouton-position { top: auto; bottom: 88px; right: 10px; }
+  .bouton-position button { padding: 10px 15px; font-size: 13px; }
+
+  /* L'explication du filtre désactivé encombre l'écran étroit :
+     le bouton barré et son infobulle suffisent. */
+  .note-desactive { display: none; }
+
+  #fiche-hopital, #panneau-proche, #panneau-itineraire, #fiche-commune,
+  #legende {
+    left: 10px; right: 10px; width: auto;
+    max-height: 60vh; overflow-y: auto;
+  }
+  #panneau-itineraire, #fiche-commune, #panneau-proche { top: auto; bottom: 10px; }
+  #legende { top: 62px; bottom: auto; max-height: 40vh; }
+  #notifications { top: auto; bottom: 10px; left: 10px; right: 10px; max-width: none; }
+  .stats { grid-template-columns: repeat(4, 1fr); }
+  .controles-carte { bottom: 150px; }
+}
+
+@media (max-width: 560px) {
+  .entete { flex-wrap: wrap; row-gap: 8px; }
+  .recherche-bloc { order: 3; flex: 1 0 100%; max-width: none; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  #recherche { padding: 10px 12px 10px 34px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}

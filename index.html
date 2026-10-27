@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Point d'entrée unique du projet.
+
+  L'application vit dans html/index.html : elle a été écrite pour y être, et
+  ses chemins (css/, js/, api/) y sont relatifs au dossier parent. Cette page
+  se contente donc d'y renvoyer, pour qu'on puisse ouvrir le projet par sa
+  racine sans avoir à se souvenir du sous-dossier.
+
+  Elle ne fait qu'une redirection : la page réelle n'est pas dupliquée, donc
+  pas de version divergente à maintenir.
+-->
+<meta http-equiv="refresh" content="0; url=html/index.html">
+<title>Carte Médicale — redirection vers l'application</title>
+<link rel="canonical" href="html/index.html">
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid; place-content: center; justify-items: center; gap: 18px;
+    font: 15px/1.55 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color: #334155; background: #f8fafc; text-align: center; padding: 24px;
+  }
+  .pastille {
+    width: 52px; height: 52px; display: grid; place-items: center;
+    border-radius: 15px; background: linear-gradient(135deg, #1d4ed8, #6d28d9);
+    box-shadow: 0 6px 18px rgba(29, 78, 216, .3);
+  }
+  h1 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -.02em; color: #0a1a2f; }
+  p { margin: 0; color: #64748b; max-width: 46ch; }
+  a {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 20px; border-radius: 12px;
+    background: #1d4ed8; color: #fff; font-weight: 600; text-decoration: none;
+    box-shadow: 0 2px 6px rgba(29, 78, 216, .28);
+  }
+  a:hover { background: #2563eb; }
+  code {
+    font: 13px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+    background: #e2e8f0; padding: 2px 6px; border-radius: 5px;
+  }
+</style>
+</head>
+<body>
+  <span class="pastille" aria-hidden="true">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </span>
+  <h1>Carte Médicale</h1>
+  <p>Redirection vers l'application…</p>
+  <p><a href="html/index.html">Ouvrir la carte interactive</a></p>
+  <p>Si rien ne se passe, vérifiez qu'Apache tourne et ouvrez directement
+     <code>http://localhost/PROJET%20SIG%20AIX/html/index.html</code>.</p>
+
+<script>
+// La meta-refresh suffit, mais certains navigateurs la bloquent en local.
+// `replace` évite de polluer l'historique avec une étape intermédiaire.
+if (!location.pathname.endsWith('/html/index.html')) {
+  location.replace('html/index.html');
+}
+</script>
+</body>
+</html>

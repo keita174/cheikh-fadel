@@ -1,0 +1,915 @@
+/* ==========================================================================
+   Carte médicale — feuille de style principale
+   --------------------------------------------------------------------------
+   Structure en deux vues :
+     1. Accueil  — bandeau d'accueil, recherche, chiffres clés
+     2. Carte    — carte plein écran, panneau Filtres, panneau Itinéraire
+
+   Principes de couleur :
+   - le bleu profond porte la navigation, il n'est jamais réservé au sens ;
+   - le rouge est réservé aux urgences, le vert à la garde : ce sont les deux
+     seules couleurs qui portent une information d'état, et elles sont
+     toujours doublées d'une icône et d'un libellé ;
+   - aucune information ne repose sur la seule couleur ni sur la seule icône.
+
+   Contrastes : texte principal #0A1A2F sur blanc (16,8:1), texte secondaire
+   #475569 (7,5:1), texte inversé blanc sur #1D4ED8 (6,3:1). Les tons de gris
+   ne portent jamais d'information, seulement de la hiérarchie.
+   ========================================================================== */
+
+:root {
+  /* Encres et surfaces */
+  --encre: #0a1a2f;
+  --encre-2: #334155;
+  --encre-3: #64748b;
+  --encre-4: #94a3b8;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --bordure: #e2e8f0;
+  --bordure-forte: #cbd5e1;
+
+  /* Bleu d'accent — navigation, actions */
+  --bleu: #1d4ed8;
+  --bleu-600: #2563eb;
+  --bleu-400: #60a5fa;
+  --bleu-100: #dbeafe;
+  --bleu-50: #eff6ff;
+
+  /* Couleurs d'état — jamais utilisées pour la décoration */
+  --urgence: #e11d48;
+  --urgence-100: #ffe4e6;
+  --garde: #059669;
+  --garde-100: #d1fae5;
+  --alerte: #b45309;
+  --alerte-100: #fef3c7;
+  --violet: #7c3aed;
+
+  /* Dégradé du bandeau */
+  --degrade: linear-gradient(135deg, #1d4ed8 0%, #4338ca 48%, #6d28d9 100%);
+
+  --r-s: 8px;
+  --r-m: 12px;
+  --r-l: 18px;
+  --r-xl: 26px;
+
+  --o1: 0 1px 2px rgba(10, 26, 47, .06), 0 1px 3px rgba(10, 26, 47, .1);
+  --o2: 0 4px 6px -1px rgba(10, 26, 47, .07), 0 12px 24px -6px rgba(10, 26, 47, .12);
+  --o3: 0 12px 28px -8px rgba(10, 26, 47, .16), 0 28px 60px -16px rgba(10, 26, 47, .18);
+
+  --t: 180ms cubic-bezier(.4, 0, .2, 1);
+  --entete-h: 68px;
+}
+
+* { box-sizing: border-box; }
+
+/* `hidden` doit l'emporter sur les règles d'affichage des vues.
+   Sans cette force, `.accueil { display: flex }` continuerait de s'afficher
+   alors que l'attribut est posé, et les deux vues se superposeraient. */
+[hidden] { display: none !important; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font: 15px/1.55 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--encre);
+  background: var(--surface-2);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:where(button, input, select, textarea) { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; }
+
+:focus-visible {
+  outline: 3px solid var(--bleu-400);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.vh {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Bandeau supérieur                                                  */
+/* ------------------------------------------------------------------ */
+.bandeau {
+  position: sticky; top: 0; z-index: 1000;
+  height: var(--entete-h);
+  display: flex; align-items: center; gap: 28px;
+  padding: 0 clamp(16px, 3vw, 40px);
+  background: rgba(255, 255, 255, .86);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.marque { display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; }
+.marque-pastille {
+  width: 38px; height: 38px; flex: none;
+  display: grid; place-items: center;
+  background: var(--degrade);
+  border-radius: 11px;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, .32);
+}
+.marque-nom {
+  font-size: 17px; font-weight: 700; letter-spacing: -.02em;
+  color: var(--bleu); line-height: 1.1;
+}
+.marque-nom span { color: var(--encre-4); font-weight: 500; }
+.marque-sous { font-size: 11px; color: var(--encre-3); letter-spacing: .01em; }
+
+.nav { display: flex; align-items: center; gap: 4px; margin-left: 8px; }
+.nav a, .nav button {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border-radius: 999px;
+  font-size: 14px; font-weight: 550; color: var(--encre-2);
+  text-decoration: none; white-space: nowrap;
+  transition: var(--t);
+}
+.nav a:hover, .nav button:hover { background: var(--bleu-50); color: var(--bleu); }
+.nav .actif { background: var(--bleu-100); color: var(--bleu); }
+.nav svg { width: 16px; height: 16px; flex: none; }
+
+.bandeau-droite { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.etat-donnees {
+  font-size: 12.5px; color: var(--encre-3);
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--surface-3); border: 1px solid var(--bordure);
+  white-space: nowrap;
+}
+.etat-donnees.erreur { background: var(--urgence-100); border-color: #fecdd3; color: #9f1239; }
+
+/* ------------------------------------------------------------------ */
+/* Boutons                                                             */
+/* ------------------------------------------------------------------ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 18px; border-radius: var(--r-m);
+  font-size: 14.5px; font-weight: 600; line-height: 1.2;
+  transition: var(--t); white-space: nowrap;
+}
+.btn svg { width: 17px; height: 17px; flex: none; }
+.btn--primaire {
+  background: var(--bleu); color: #fff;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, .28), 0 8px 20px -6px rgba(29, 78, 216, .38);
+}
+.btn--primaire:hover { background: var(--bleu-600); transform: translateY(-1px); }
+.btn--primaire:active { transform: translateY(0); }
+.btn--fantome { background: var(--surface); color: var(--encre-2); border: 1px solid var(--bordure-forte); }
+.btn--fantome:hover { background: var(--surface-2); color: var(--encre); border-color: var(--encre-4); }
+.btn--succes { background: var(--garde); color: #fff; box-shadow: 0 2px 6px rgba(5, 150, 105, .28); }
+.btn--succes:hover { background: #047857; transform: translateY(-1px); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; transform: none !important; }
+.btn--bloc { width: 100%; }
+
+/* ------------------------------------------------------------------ */
+/* Vue 1 — Accueil                                                     */
+/* ------------------------------------------------------------------ */
+.accueil {
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+}
+
+.heros {
+  position: relative; overflow: hidden;
+  background: var(--degrade);
+  color: #fff;
+  padding: clamp(44px, 7vw, 84px) clamp(16px, 3vw, 40px) clamp(52px, 8vw, 96px);
+}
+/* Deux halos disjoints du texte : c'est la texture, pas un information. */
+.heros::before, .heros::after {
+  content: ""; position: absolute; border-radius: 50%;
+  pointer-events: none;
+}
+.heros::before {
+  width: 620px; height: 620px; top: -280px; right: -160px;
+  background: radial-gradient(circle, rgba(255,255,255,.20), transparent 68%);
+}
+.heros::after {
+  width: 520px; height: 520px; bottom: -300px; left: -140px;
+  background: radial-gradient(circle, rgba(56,189,248,.28), transparent 68%);
+}
+.heros > * { position: relative; z-index: 1; }
+
+.heros-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 999px;
+  background: rgba(255, 255, 255, .16);
+  border: 1px solid rgba(255, 255, 255, .24);
+  font-size: 12.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  margin-bottom: 22px;
+}
+.heros h1 {
+  margin: 0 0 18px;
+  font-size: clamp(34px, 5.6vw, 60px);
+  font-weight: 800; line-height: 1.04; letter-spacing: -.03em;
+  max-width: 17ch;
+}
+.heros h1 em { font-style: normal; color: #a5f3fc; }
+.heros p.lede {
+  margin: 0 0 32px; max-width: 52ch;
+  font-size: clamp(15px, 1.6vw, 18px);
+  color: rgba(255, 255, 255, .88);
+}
+
+/* Recherche du bandeau */
+.heros-recherche {
+  display: flex; align-items: center; gap: 10px;
+  max-width: 620px; padding: 7px 7px 7px 20px;
+  background: #fff; border-radius: 999px;
+  box-shadow: 0 18px 44px -12px rgba(4, 12, 40, .5);
+}
+.heros-recherche input {
+  flex: 1; min-width: 0;
+  border: 0; background: none; padding: 12px 0;
+  font-size: 15.5px; color: var(--encre);
+}
+.heros-recherche input::placeholder { color: var(--encre-4); }
+.heros-recherche input:focus { outline: none; }
+.heros-recherche .btn { border-radius: 999px; padding: 12px 22px; }
+
+.heros-filtres { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.puce {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: 999px;
+  background: rgba(255, 255, 255, .14);
+  border: 1px solid rgba(255, 255, 255, .22);
+  color: #fff; font-size: 13.5px; font-weight: 550;
+  transition: var(--t);
+}
+.puce:hover { background: rgba(255, 255, 255, .24); }
+.puce[aria-pressed="true"] { background: #fff; color: var(--bleu); border-color: #fff; }
+.puce .pastille { width: 9px; height: 9px; border-radius: 50%; background: #fff; }
+.puce[aria-pressed="true"] .pastille { background: currentColor; }
+.puce--urgence .pastille { background: #fda4af; }
+.puce--garde .pastille { background: #6ee7b7; }
+
+/* Chiffres clés */
+.chiffres {
+  display: grid; gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  width: 100%; max-width: 1160px;
+  margin: -46px auto 0; padding: 0 clamp(16px, 3vw, 40px);
+  position: relative; z-index: 2;
+}
+.carte-chiffre {
+  display: flex; align-items: center; gap: 16px;
+  padding: 22px 24px;
+  background: var(--surface); border: 1px solid var(--bordure);
+  border-radius: var(--r-l); box-shadow: var(--o3);
+  transition: var(--t);
+}
+.carte-chiffre:hover { transform: translateY(-3px); box-shadow: var(--o3); }
+.carte-chiffre .pastille {
+  width: 52px; height: 52px; flex: none;
+  display: grid; place-items: center; border-radius: 15px;
+}
+.carte-chiffre .pastille svg { width: 24px; height: 24px; color: #fff; }
+.pastille--bleu    { background: var(--bleu); }
+.pastille--garde   { background: var(--garde); }
+.pastille--alerte  { background: var(--alerte); }
+.pastille--urgence { background: var(--urgence); }
+.carte-chiffre b {
+  display: block; font-size: 27px; font-weight: 750;
+  letter-spacing: -.02em; line-height: 1.1;
+}
+.carte-chiffre span { font-size: 13px; color: var(--encre-3); }
+
+/* Bandeau de Naviguer */
+/* `width: 100%` est nécessaire : dans un conteneur flex en colonne, des
+   marges latérales automatiques désactivent l'étirement, et l'élément se
+   retrouve centré sur une largeur arbitraire au lieu d'occuper la ligne. */
+.parcours {
+  width: 100%; max-width: 1160px; margin: 0 auto;
+  padding: 56px clamp(16px, 3vw, 40px) 72px;
+}
+.parcours h2 {
+  margin: 0 0 26px; font-size: clamp(23px, 3vw, 30px);
+  font-weight: 750; letter-spacing: -.02em;
+}
+.parcours-grille { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.etape {
+  display: block; padding: 24px; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--bordure);
+  border-radius: var(--r-l); transition: var(--t);
+}
+.etape:hover { border-color: var(--bleu-400); transform: translateY(-3px); box-shadow: var(--o2); }
+.etape .num {
+  display: inline-grid; place-items: center;
+  width: 32px; height: 32px; margin-bottom: 14px;
+  border-radius: 9px; background: var(--bleu-100); color: var(--bleu);
+  font-weight: 700; font-size: 14px;
+}
+.etape h3 { margin: 0 0 6px; font-size: 16.5px; font-weight: 680; letter-spacing: -.01em; }
+.etape p { margin: 0; font-size: 14px; color: var(--encre-3); }
+
+.pied {
+  padding: 32px clamp(16px, 3vw, 40px);
+  background: var(--encre); color: #cbd5e1;
+  font-size: 13.5px;
+}
+.pied strong { color: #fff; }
+.pied .limite {
+  margin-top: 14px; padding: 14px 18px;
+  background: rgba(255, 255, 255, .06);
+  border-left: 3px solid var(--alerte); border-radius: 0 var(--r-s) var(--r-s) 0;
+  color: #e2e8f0; max-width: 90ch;
+}
+
+/* ------------------------------------------------------------------ */
+/* Vue 2 — Carte                                                       */
+/* ------------------------------------------------------------------ */
+/* La carte est fixée sous le bandeau, hors du flux normal.
+   En `height: 100vh`, elle serait plus haute que la fenêtre puisque le
+   bandeau occupe 68 px dans le flux : le bas de page ne serait jamais
+   visible et les boutons du bas resteraient hors champ. */
+.vue-carte {
+  position: fixed;
+  top: var(--entete-h); right: 0; bottom: 0; left: 0;
+  overflow: hidden;
+  background: #dfe6ec;
+}
+#carte { position: absolute; inset: 0; z-index: 1; }
+
+.voile {
+  position: absolute; inset: 0; z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(10,26,47,.10) 0, transparent 90px);
+  opacity: 0; transition: var(--t);
+}
+.vue-carte.chargee .voile { opacity: 1; pointer-events: none; }
+
+/* Panneaux flottants */
+.voile, .volet { pointer-events: auto; }
+
+.flotant {
+  position: absolute; z-index: 600;
+  width: 322px; max-width: calc(100vw - 32px);
+  /* La hauteur est bornée par la fenêtre : l'en-tête reste visible et c'est
+     le corps qui défile. Sans cette borne, le panneau Filtres peut déborder
+     sous le bas de l'écran sur un petit écran. */
+  max-height: calc(100vh - 104px);
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border-radius: var(--r-l);
+  box-shadow: var(--o3);
+  overflow: hidden;
+}
+.flotant--filtres { left: 20px; top: 84px; }
+.flotant--route   { right: 20px; top: 84px; }
+.flotant--liste   { right: 20px; bottom: 20px; width: 360px; max-height: min(46vh, 46dvh); }
+
+.flotant-entete {
+  display: flex; align-items: center; gap: 10px;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--bordure);
+}
+.flotant-entete .glyphe {
+  width: 30px; height: 30px; flex: none;
+  display: grid; place-items: center; border-radius: 9px;
+  background: var(--bleu-100); color: var(--bleu);
+}
+.flotant-entete .glyphe svg { width: 16px; height: 16px; }
+.flotant-entete h2 { margin: 0; font-size: 15.5px; font-weight: 680; letter-spacing: -.01em; }
+.flotant-corps { padding: 18px 20px 20px; overflow-y: auto; flex: 1; min-height: 0; }
+.flotant .fermer {
+  margin-left: auto; width: 28px; height: 28px;
+  display: grid; place-items: center;
+  border-radius: 8px; color: var(--encre-3); font-size: 19px; line-height: 1;
+}
+.flotant .fermer:hover { background: var(--surface-3); color: var(--encre); }
+
+/* Champs de formulaire */
+.champ { margin-bottom: 16px; }
+.champ:last-child { margin-bottom: 0; }
+.champ > label {
+  display: block; margin-bottom: 6px;
+  font-size: 12.5px; font-weight: 620; color: var(--encre-2);
+  letter-spacing: .01em;
+}
+.champ select, .champ input[type="search"], .champ input[type="text"] {
+  width: 100%; padding: 11px 13px;
+  border: 1px solid var(--bordure-forte); border-radius: var(--r-m);
+  background: var(--surface); color: var(--encre); font-size: 14px;
+  transition: var(--t);
+}
+.champ select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 17px;
+  padding-right: 36px;
+}
+.champ select:hover, .champ input:hover { border-color: var(--encre-4); }
+.champ select:focus, .champ input:focus { outline: none; border-color: var(--bleu); box-shadow: 0 0 0 3px var(--bleu-100); }
+
+.case { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; cursor: pointer; }
+.case input { width: 18px; height: 18px; flex: none; margin: 2px 0 0; accent-color: var(--bleu); cursor: pointer; }
+.case .texte { font-size: 14px; color: var(--encre-2); line-height: 1.4; }
+.case .note { display: block; font-size: 12.5px; color: var(--encre-4); }
+.case.desactive { opacity: .55; cursor: not-allowed; }
+
+.separateur { height: 1px; background: var(--bordure); margin: 18px 0; border: 0; }
+
+/* Légende de la rampe. Le nuancier reprend exactement les couleurs de
+   MapView.CLASSES : une légende qui diverge de la carte mentirait. */
+.legende-carte { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--bordure); }
+.legende-carte h2 {
+  margin: 0 0 11px;
+  font-size: 11.5px; font-weight: 680; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--encre-3);
+}
+.legende-carte ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.legende-carte li { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--encre-2); }
+.legende-carte .pastille {
+  width: 22px; height: 14px; flex: none;
+  border-radius: 3px; border: 1px solid rgba(10, 26, 47, .18);
+}
+.legende-note {
+  margin: 12px 0 0; font-size: 12px; line-height: 1.45; color: var(--encre-4);
+}
+.legende-note:empty { display: none; }
+
+/* Rappel permanent de ce que la carte affiche réellement.
+   Une notification disparaît ; ce texte, non. C'est nécessaire parce que le
+   filtre porte sur la liste ET sur la coloration des contours, et qu'un
+   décompte affiché quelque part dans l'interface ne le dirait pas. */
+.resume-filtre {
+  margin: 14px 0 0; padding: 11px 13px;
+  background: var(--bleu-50); border-left: 3px solid var(--bleu);
+  border-radius: 0 var(--r-s) var(--r-s) 0;
+  font-size: 12.5px; line-height: 1.5; color: var(--encre-2);
+}
+.resume-filtre:empty { display: none; }
+
+.lien-discret {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 10px; margin-top: 12px;
+  border-radius: var(--r-m);
+  font-size: 13.5px; font-weight: 560; color: var(--encre-3);
+  transition: var(--t);
+}
+.lien-discret:hover { background: var(--surface-3); color: var(--encre); }
+.lien-discret svg { width: 16px; height: 16px; flex: none; }
+
+/* Résultat d'itinéraire */
+.resultat-route { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--bordure); }
+.resultat-route dl { display: grid; grid-template-columns: auto 1fr; gap: 11px 12px; margin: 0 0 16px; }
+.resultat-route dt { display: flex; align-items: center; gap: 8px; color: var(--encre-3); font-size: 13.5px; }
+.resultat-route dt svg { width: 16px; height: 16px; flex: none; }
+.resultat-route dd {
+  margin: 0; text-align: right;
+  font-size: 15px; font-weight: 680; letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.resultat-route .vide { color: var(--encre-4); font-weight: 500; font-size: 13.5px; }
+
+/* Liste des établissements */
+.compteur {
+  margin: 0; padding: 12px 20px;
+  font-size: 13px; color: var(--encre-3);
+  border-bottom: 1px solid var(--bordure);
+  background: var(--surface-2);
+}
+.liste { overflow-y: auto; flex: 1; }
+
+/* Structure produite par ui.js : .ligne-hopital > .ligne-point + .ligne-corps */
+.ligne-hopital {
+  display: flex; gap: 12px; align-items: flex-start; width: 100%;
+  padding: 13px 20px; text-align: left;
+  border-bottom: 1px solid var(--surface-3);
+  transition: var(--t);
+}
+.ligne-hopital:hover { background: var(--bleu-50); }
+.ligne-hopital.plus-proche { background: var(--bleu-50); }
+
+.ligne-point {
+  width: 30px; height: 30px; flex: none; margin-top: 1px;
+  border-radius: 50%;
+  background: var(--bleu);
+  box-shadow: inset 0 0 0 2px #fff, 0 1px 3px rgba(10, 26, 47, .25);
+}
+.ligne-point.urgence { background: var(--urgence); }
+.ligne-point.garde { background: var(--garde); }
+.ligne-point.urgence-garde {
+  background: linear-gradient(135deg, var(--urgence) 50%, var(--garde) 50%);
+}
+
+.ligne-corps { min-width: 0; flex: 1; }
+.ligne-nom {
+  display: block; font-size: 14px; font-weight: 620; line-height: 1.35;
+  color: var(--encre); margin-bottom: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ligne-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--encre-3); line-height: 1.4;
+}
+.ligne-distance {
+  flex: none; align-self: center;
+  font-size: 12.5px; font-weight: 650; color: var(--bleu);
+  font-variant-numeric: tabular-nums;
+}
+
+.liste .vide {
+  margin: 0; padding: 28px 20px;
+  text-align: center; color: var(--encre-4); font-size: 13.5px; line-height: 1.5;
+}
+
+.badge--proche { background: var(--alerte-100); color: #78350f; }
+.stat.indisponible { opacity: .45; }
+
+/* Contrôles flottants de la carte */
+.controles-carte {
+  position: absolute; z-index: 600; right: 20px; bottom: 20px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.controle {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  background: var(--surface); color: var(--encre-2);
+  border-radius: var(--r-m); box-shadow: var(--o2);
+  font-size: 19px; line-height: 1;
+  transition: var(--t);
+}
+.controle:hover { background: var(--bleu-50); color: var(--bleu); }
+/* Fond sobre actif : l'état est signalé par la couleur, pas seulement par
+   l'attribut aria-pressed, que personne ne voit. */
+.controle.actif { background: var(--bleu); color: #fff; }
+.controle.actif:hover { background: var(--bleu-600); color: #fff; }
+
+/* Fond de carte désaturé.
+   Un fond OpenStreetMap standard est beige, vert et bleu : une commune colorée
+   y passe presque inaperçue, et le bleu des communes se confond avec celui de
+   l'eau. Désaturer les tuiles laisse la couche de communes seule porter la
+   couleur, sans changer de fournisseur ni exiger de clé d'API. */
+.leaflet-container[data-fond="sobre"] .leaflet-tile-pane {
+  filter: grayscale(.9) contrast(.94) brightness(1.04);
+}
+.leaflet-container[data-fond="detaille"] .leaflet-tile-pane {
+  filter: none;
+}
+.controle svg { width: 18px; height: 18px; }
+
+.bouton-position {
+  position: absolute; z-index: 600; left: 20px; bottom: 20px;
+}
+/* L'action principale doit se lire comme telle : c'est elle qui répond à
+   « quel hôpital ai-je autour de moi, et comment j'y vais ». */
+.btn--proche {
+  padding: 12px 20px; font-size: 15px;
+  box-shadow: 0 3px 8px rgba(29, 78, 216, .3), 0 10px 28px -8px rgba(29, 78, 216, .5);
+}
+
+/* Liste des plus proches */
+.proche-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.proche-item {
+  padding: 14px 16px;
+  border: 1px solid var(--bordure); border-radius: var(--r-m);
+  background: var(--surface-2);
+}
+.proche-item--urgence {
+  border-color: #fecdd3;
+  background: linear-gradient(180deg, var(--urgence-100), var(--surface) 60%);
+}
+.proche-intitule {
+  display: block; margin-bottom: 4px;
+  font-size: 11.5px; font-weight: 680; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--encre-3);
+}
+.proche-item--urgence .proche-intitule { color: #9f1239; }
+.proche-item strong {
+  display: block; font-size: 15px; font-weight: 680; line-height: 1.3;
+  letter-spacing: -.01em; color: var(--encre);
+}
+.proche-lieu { display: block; margin-top: 2px; font-size: 12.5px; color: var(--encre-3); }
+.proche-distance {
+  display: block; margin-top: 6px;
+  font-size: 19px; font-weight: 750; color: var(--bleu);
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+}
+.proche-actions { display: flex; gap: 8px; margin-top: 12px; }
+.proche-actions .btn { flex: 1; padding: 9px 12px; font-size: 13.5px; }
+
+/* Barre de filtres rapide */
+.filtres-rapides {
+  position: absolute; z-index: 600; left: 50%; bottom: 20px;
+  transform: translateX(-50%);
+  display: flex; gap: 4px; padding: 5px;
+  background: var(--surface); border-radius: 999px; box-shadow: var(--o2);
+}
+.filtres-rapides button {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 16px; border-radius: 999px;
+  font-size: 13.5px; font-weight: 600; color: var(--encre-2);
+  transition: var(--t); white-space: nowrap;
+}
+.filtres-rapides button:hover { background: var(--surface-3); }
+.filtres-rapides button.actif { background: var(--bleu); color: #fff; }
+.filtres-rapides button .pastille { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .45; }
+.filtres-rapides button.actif .pastille { opacity: 1; }
+.filtres-rapides button[data-filtre="urgences"] .pastille { background: var(--urgence); opacity: 1; }
+.filtres-rapides button[data-filtre="garde"] .pastille { background: var(--garde); opacity: 1; }
+.filtres-rapides button[disabled] { opacity: .42; cursor: not-allowed; }
+
+/* Infobulle */
+#infobulle {
+  position: absolute; z-index: 700; pointer-events: none;
+  padding: 9px 13px; border-radius: var(--r-s);
+  background: rgba(10, 26, 47, .94); color: #fff;
+  font-size: 13px; line-height: 1.4; white-space: nowrap;
+  box-shadow: var(--o2);
+  opacity: 0; transform: translateY(4px); transition: var(--t);
+}
+#infobulle.visible { opacity: 1; transform: translateY(0); }
+
+/* ------------------------------------------------------------------ */
+/* Recherche                                                           */
+/* ------------------------------------------------------------------ */
+/* Le même couple #recherche / #resultats est déplacé entre le bandeau    */
+/* d'accueil et l'en-tête de la carte : un seul champ, un seul jeu de     */
+/* résultats, donc pas de divergence entre les deux vues.                 */
+.recherche-bloc { position: relative; flex: 1; min-width: 0; max-width: 560px; }
+.recherche-bloc input {
+  width: 100%; padding: 11px 15px;
+  border: 1px solid var(--bordure-forte); border-radius: var(--r-m);
+  background: var(--surface); color: var(--encre); font-size: 14.5px;
+  transition: var(--t);
+}
+.recherche-bloc input::placeholder { color: var(--encre-4); }
+.recherche-bloc input:hover { border-color: var(--encre-4); }
+.recherche-bloc input:focus {
+  outline: none; border-color: var(--bleu);
+  box-shadow: 0 0 0 3px var(--bleu-100);
+}
+
+/* Variante posée dans le bandeau d'accueil */
+.heros .recherche-bloc { max-width: none; }
+.heros .recherche-bloc input {
+  padding: 12px 0; border: 0; background: none; font-size: 15.5px;
+}
+.heros .recherche-bloc input:focus { box-shadow: none; }
+
+.resultats {
+  position: absolute; z-index: 1400; top: calc(100% + 8px); left: 0; right: 0;
+  background: var(--surface); border-radius: var(--r-m);
+  box-shadow: var(--o3); border: 1px solid var(--bordure);
+  overflow: hidden; display: none; max-height: 380px; overflow-y: auto;
+}
+.resultats.ouvert { display: block; }
+.resultats .vide { margin: 0; padding: 22px; text-align: center; color: var(--encre-4); font-size: 14px; }
+.resultat {
+  display: flex; gap: 11px; align-items: center; width: 100%;
+  padding: 11px 15px; text-align: left; transition: var(--t);
+}
+.resultat:hover, .resultat.survol { background: var(--bleu-50); }
+.resultat + .resultat { border-top: 1px solid var(--surface-3); }
+.resultat-ic {
+  width: 30px; height: 30px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 9px; background: var(--bleu-100); color: var(--bleu);
+  font-size: 14px;
+}
+.resultat-corps { min-width: 0; flex: 1; }
+.resultat-nom {
+  display: block; font-size: 14px; font-weight: 600; line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.resultat-detail { display: block; font-size: 12.5px; color: var(--encre-3); }
+
+/* ------------------------------------------------------------------ */
+/* Fiches et panneaux (générés par ui.js)                             */
+/* ------------------------------------------------------------------ */
+.volet {
+  position: absolute; z-index: 650;
+  width: 380px; max-width: calc(100vw - 32px);
+  background: var(--surface);
+  border-radius: var(--r-l); box-shadow: var(--o3);
+  overflow: hidden;
+  transform: translateY(14px); opacity: 0;
+  visibility: hidden;
+  transition: var(--t);
+}
+.volet.ouvert { transform: none; opacity: 1; visibility: visible; }
+#panneau-proche, #panneau-itineraire, #fiche-hopital { right: 20px; top: 84px; }
+#fiche-commune { left: 20px; top: 84px; }
+.volet-entete {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 16px 20px; border-bottom: 1px solid var(--bordure);
+  background: var(--surface-2);
+}
+.volet-entete h3 { margin: 0; font-size: 16px; font-weight: 680; letter-spacing: -.01em; }
+.volet-entete .sous { margin: 2px 0 0; font-size: 12.5px; color: var(--encre-3); }
+.volet-corps { padding: 16px 20px 20px; max-height: 52vh; overflow-y: auto; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 640; letter-spacing: .01em;
+  background: var(--surface-3); color: var(--encre-2);
+}
+.badge--urgence { background: var(--urgence-100); color: #9f1239; }
+.badge--garde { background: var(--garde-100); color: #065f46; }
+
+.ligne {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--surface-3);
+  font-size: 13.5px;
+}
+.ligne:last-child { border-bottom: 0; }
+.ligne .cle { color: var(--encre-3); display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ligne .cle .ic { opacity: .6; font-size: 12px; }
+.ligne .val { margin-left: auto; font-weight: 600; text-align: right; word-break: break-word; }
+
+.note-desactive {
+  margin: 12px 0 0; padding: 11px 13px;
+  background: var(--alerte-100); border-left: 3px solid var(--alerte);
+  border-radius: 0 var(--r-s) var(--r-s) 0;
+  font-size: 12.5px; color: #78350f; line-height: 1.45;
+}
+
+/* ------------------------------------------------------------------ */
+/* Notifications et chargement                                        */
+/* ------------------------------------------------------------------ */
+#notifications {
+  position: fixed; z-index: 2000; top: calc(var(--entete-h) + 12px); right: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  max-width: min(420px, calc(100vw - 32px));
+  pointer-events: none;
+}
+/* Le sélecteur est volontairement préfixé par `#notifications` : les cases à
+   cocher utilisent elles aussi une classe `note` pour leur texte d'aide, qui
+   doit rester un texte discret et non un bandeau sombre flottant. */
+#notifications .note {
+  pointer-events: auto;
+  padding: 13px 16px; border-radius: var(--r-m);
+  background: var(--encre); color: #f1f5f9;
+  font-size: 13.5px; line-height: 1.5;
+  box-shadow: var(--o3);
+  animation: entree 260ms cubic-bezier(.2, .9, .3, 1);
+}
+#notifications .note--erreur { background: #7f1d1d; }
+#notifications .note--succes { background: #065f46; }
+@keyframes entree { from { opacity: 0; transform: translateY(-10px); } }
+
+#chargement {
+  position: fixed; inset: 0; z-index: 3000;
+  display: grid; place-content: center; justify-items: center; gap: 20px;
+  background: var(--surface);
+  transition: opacity 320ms ease, visibility 320ms;
+}
+#chargement.cache { opacity: 0; visibility: hidden; }
+.squelette {
+  width: 190px; height: 5px; border-radius: 999px; overflow: hidden;
+  background: var(--surface-3); position: relative;
+}
+.squelette::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, var(--bleu-400), transparent);
+  animation: balayage 1.15s ease-in-out infinite;
+}
+@keyframes balayage { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+#chargement-texte { font-size: 14px; color: var(--encre-3); }
+
+/* ------------------------------------------------------------------ */
+/* Regroupement des établissements.
+   Les classes par défaut du plugin Lazarus dessinent un groupe comme un point
+   plus gros et plus foncé ; on les remplace par une pastille chiffrée dans
+   la palette du site, et on neutralise le conteneur carré qu'il impose. */
+.groupe-icone { background: none !important; border: 0 !important; }
+
+.groupe {
+  width: 100%; height: 100%;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--bleu);
+  /* Halo blanc puis liseré : la pastille reste lisible sur un fond clair
+     comme sur un fond soutenu, sans dépendre de la couleur du fond. */
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, .92),
+    0 0 0 6px rgba(29, 78, 216, .22),
+    0 3px 8px rgba(10, 26, 47, .3);
+  color: #fff; font-weight: 700;
+  transition: transform 160ms ease;
+}
+.groupe:hover { transform: scale(1.07); }
+.groupe-nombre {
+  font-size: 15px; line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+/* Rouge dès qu'un seul établissement du groupe dispose d'urgences : c'est
+   l'information qui décide d'une urgence, et elle doit se voir sans zoom. */
+.groupe--urgence {
+  background: var(--urgence);
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, .92),
+    0 0 0 6px rgba(225, 29, 72, .25),
+    0 3px 8px rgba(10, 26, 47, .3);
+}
+
+/* Les liens qui relient les pins écartés d'un même groupe sont réduits à un
+   point discret : par défaut ils passent au-dessus des pastilles voisines et
+   se confondent avec elles. */
+.leaflet-cluster-spider-leg {
+  width: 8px !important; height: 8px !important;
+  margin: -4px 0 0 -4px !important;
+  background: rgba(10, 26, 47, .45);
+  border: 1.5px solid #fff; border-radius: 50%;
+}
+.leaflet-cluster-spider-leg:hover {
+  width: 10px !important; height: 10px !important;
+  margin: -5px 0 0 -5px !important;
+}
+
+/* Marqueurs Leaflet                                                   */
+/* ------------------------------------------------------------------ */
+.marqueur {
+  position: relative;
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--bleu);
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 6px rgba(10, 26, 47, .35);
+  color: #fff;
+  transition: transform 160ms ease;
+}
+.marqueur svg { width: 15px; height: 15px; }
+.marqueur--urgence { background: var(--urgence); }
+.marqueur--garde { background: var(--garde); }
+.marqueur--double { background: linear-gradient(135deg, var(--urgence) 50%, var(--garde) 50%); }
+.marqueur--moi {
+  background: var(--violet);
+  box-shadow: 0 0 0 6px rgba(124, 58, 237, .22), 0 2px 6px rgba(10,26,47,.35);
+}
+.leaflet-marker-icon:hover .marqueur { transform: scale(1.14); }
+.leaflet-marker-icon.selection .marqueur {
+  box-shadow: 0 0 0 5px rgba(29, 78, 216, .32), 0 2px 6px rgba(10, 26, 47, .35);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: var(--r-m); box-shadow: var(--o3); padding: 0;
+}
+.leaflet-popup-content { margin: 0; font: inherit; min-width: 190px; }
+.leaflet-popup-tip { box-shadow: var(--o1); }
+.leaflet-container { font: inherit; background: #dfe6ec; }
+.leaflet-bar a { color: var(--encre-2); }
+.leaflet-bar a:hover { background: var(--bleu-50); color: var(--bleu); }
+
+/* Contour des communes */
+.commune { transition: fill-opacity 140ms ease, stroke 140ms ease; }
+.commune.selection { stroke: var(--bleu) !important; stroke-width: 2.4 !important; }
+
+/* ------------------------------------------------------------------ */
+/* Adaptatif                                                          */
+/* ------------------------------------------------------------------ */
+@media (max-width: 1180px) {
+  .flotant--liste { display: none; }
+  #panneau-proche, #panneau-itineraire, #fiche-hopital { top: 84px; }
+}
+
+@media (max-width: 900px) {
+  :root { --entete-h: 60px; }
+  .nav { display: none; }
+  .etat-donnees { display: none; }
+  .flotant {
+    width: auto; left: 12px !important; right: 12px !important;
+    top: auto !important; bottom: 78px; max-width: none;
+  }
+  .flotant--route { display: none; }
+  .flotant--route.ouvert { display: block; }
+  .volet { left: 12px !important; right: 12px !important; width: auto; top: auto; bottom: 78px; }
+  .volet-corps { max-height: 40vh; }
+  .filtres-rapides { left: 12px; right: 12px; transform: none; bottom: 14px; justify-content: center; }
+  .bouton-position { left: 12px; bottom: 66px; }
+  .controles-carte { right: 12px; bottom: 66px; }
+  .chiffres { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .carte-chiffre { padding: 16px; gap: 12px; }
+  .carte-chiffre b { font-size: 21px; }
+  .carte-chiffre .pastille { width: 42px; height: 42px; }
+}
+
+@media (max-width: 520px) {
+  .chiffres { grid-template-columns: 1fr; }
+  .heros-recherche { flex-direction: row; padding-left: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media print {
+  .bandeau, .flotant, .controles-carte, .filtres-rapides, #notifications { display: none !important; }
+}

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Trouvez un hôpital, une clinique ou un service d'urgences en France. Carte interactive des 34 877 communes, itinéraire et établissement le plus proche.">
+<meta name="theme-color" content="#1d4ed8">
+<title>Carte Médicale — Trouvez un hôpital en France</title>
+<link rel="preconnect" href="https://tile.openstreetmap.org">
+<link rel="stylesheet" href="../vendor/leaflet.css">
+<link rel="stylesheet" href="../vendor/MarkerCluster.css">
+<link rel="stylesheet" href="../vendor/MarkerCluster.Default.css">
+<link rel="stylesheet" href="../css/carte-medicale.css">
+</head>
+<body>
+
+<!-- ================================================================== -->
+<!-- Bandeau commun aux deux vues                                        -->
+<!-- ================================================================== -->
+<header class="bandeau">
+  <a class="marque" href="#" data-aller-accueil>
+    <span class="marque-pastille" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </span>
+    <span>
+      <span class="marque-nom">Carte Médicale<span>.fr</span></span>
+      <span class="marque-sous">Communes &amp; établissements de santé</span>
+    </span>
+  </a>
+
+  <nav class="nav" aria-label="Navigation principale">
+    <a href="#" data-aller-accueil class="actif" data-vue="accueil">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>
+      Accueil
+    </a>
+    <a href="#" data-aller-carte data-vue="carte">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5z"/><path d="M9 4v13M15 6.5v13"/></svg>
+      Établissements
+    </a>
+    <button type="button" data-aller-carte data-ouvrir-urgences>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 20h20z"/></svg>
+      Urgences
+    </button>
+  </nav>
+
+  <!-- Emplacement d'accueil : le champ de recherche y est posé au départ -->
+  <span id="slot-recherche-hero" class="recherche-bloc-slot"></span>
+
+  <!-- Emplacement de la carte : le même champ y est déplacé -->
+  <span id="slot-recherche-carte" class="recherche-bloc-slot"></span>
+
+  <div class="bandeau-droite">
+    <span id="etat-donnees" class="etat-donnees" role="status" aria-live="polite">Chargement…</span>
+  </div>
+</header>
+
+<style>
+/* Le conteneur du champ de recherche n'a pas de mise en forme propre :
+   c'est `.recherche-bloc` qui est stylé, où qu'il soit posé. */
+.recherche-bloc-slot { flex: 1; min-width: 0; display: flex; }
+.recherche-bloc-slot:empty { display: none; }
+.bandeau .recherche-bloc-slot { flex: 1; max-width: 460px; }
+/* L'emplacement d'accueil ne doit pas voler de place au titre. */
+#slot-recherche { flex: 1; min-width: 0; display: flex; }
+#slot-recherche .recherche-bloc { flex: 1; min-width: 0; }
+</style>
+
+<!-- ================================================================== -->
+<!-- Vue 1 — Accueil                                                     -->
+<!-- ================================================================== -->
+<main id="vue-accueil" class="accueil">
+
+  <section class="heros">
+    <span class="heros-eyebrow">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+      Données ADMIN EXPRESS (IGN) &amp; OpenStreetMap
+    </span>
+
+    <h1>Trouvez un hôpital <em>en France</em></h1>
+    <p class="lede">
+      Localisez les établissements de santé commune par commune, filtrez par
+      département, calculez un itinéraire vers les urgences, puis repérez
+      l'établissement le plus proche de votre position.
+    </p>
+
+    <!-- Bloc de recherche : déplacé dans l'en-tête quand la carte s'ouvre -->
+    <div class="heros-recherche" id="rangee-recherche">
+      <span id="slot-recherche" class="slot-recherche">
+        <span class="recherche-bloc" id="bloc-recherche">
+          <label for="recherche" class="vh">Rechercher un établissement ou une commune</label>
+          <input id="recherche" type="search" autocomplete="off" role="combobox"
+                 aria-expanded="false" aria-controls="resultats" aria-autocomplete="list"
+                 placeholder="Rechercher un hôpital, une commune…">
+          <div id="resultats" class="resultats" role="listbox" aria-label="Résultats de recherche"></div>
+        </span>
+      </span>
+      <button type="button" class="btn btn--primaire" data-aller-carte data-lancer-recherche>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        Rechercher
+      </button>
+    </div>
+
+    <div class="heros-filtres">
+      <button type="button" class="puce puce--urgence" id="puce-urgences" aria-pressed="false">
+        <span class="pastille"></span> Urgences
+      </button>
+      <button type="button" class="puce puce--garde" id="puce-garde" aria-pressed="false"
+              title="Aucun champ de garde dans les données sources">
+        <span class="pastille"></span> De garde
+      </button>
+      <button type="button" class="puce" data-aller-carte>
+        <span class="pastille"></span> Itinéraire
+      </button>
+    </div>
+  </section>
+
+  <section class="chiffres" aria-label="Chiffres clés">
+    <article class="carte-chiffre">
+      <span class="pastille pastille--bleu" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg>
+      </span>
+      <div>
+        <b id="stat-hero-etablissements">—</b>
+        <span>Établissements de santé</span>
+      </div>
+    </article>
+
+    <article class="carte-chiffre">
+      <span class="pastille pastille--garde" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.7-7-11a7 7 0 1 1 14 0c0 5.3-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      </span>
+      <div>
+        <b id="stat-hero-communes">—</b>
+        <span>Communes couvertes</span>
+      </div>
+    </article>
+
+    <article class="carte-chiffre">
+      <span class="pastille pastille--alerte" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 20h20z"/><path d="M12 9v5M12 17h.01"/></svg>
+      </span>
+      <div>
+        <b id="stat-hero-urgences">—</b>
+        <span>Avec service d'urgences</span>
+      </div>
+    </article>
+
+    <article class="carte-chiffre">
+      <span class="pastille pastille--urgence" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg>
+      </span>
+      <div>
+        <b id="stat-hero-departements">—</b>
+        <span>Départements &amp; regions</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="parcours">
+    <h2>Comment ça marche</h2>
+    <div class="parcours-grille">
+      <a class="etape" href="#" data-aller-carte>
+        <span class="num">1</span>
+        <h3>Ouvrir la carte</h3>
+        <p>Les 34 877 communes de France sont tracées. Survolez-en une pour voir
+           combien d'établissements elle compte.</p>
+      </a>
+      <a class="etape" href="#" data-aller-carte>
+        <span class="num">2</span>
+        <h3>Filtrer</h3>
+        <p>Restreignez à un département, ou ne gardez que les sites disposant
+           d'un service d'urgences.</p>
+      </a>
+      <a class="etape" href="#" data-aller-carte>
+        <span class="num">3</span>
+        <h3>Calculer l'itinéraire</h3>
+        <p>Distance et durée jusqu'à l'hôpital choisi, puis ouverture
+           directe dans votre navigateur de cartes.</p>
+      </a>
+    </div>
+  </section>
+
+  <footer class="pied">
+    <strong>Carte Médicale</strong> — communes ADMIN EXPRESS (IGN), Willow Project
+    &amp; OpenStreetMap. Itinéraires calculés par OpenRouteService.
+    <p class="limite">
+      <strong>Limite connue :</strong> les sources ne comportent aucun indicateur
+      de garde ni d'horaires d'ouverture. Le filtre « de garde » reste donc
+      désactivé plutôt que d'afficher une information qui n'existe pas. Les
+      affiliations d'un établissement à sa commune sont déterminées par
+      inclusion géométrique du point dans le contour communal.
+    </p>
+  </footer>
+</main>
+
+<!-- ================================================================== -->
+<!-- Vue 2 — Carte                                                       -->
+<!-- ================================================================== -->
+<div id="vue-carte" class="vue-carte" hidden>
+  <div id="carte" role="application" aria-label="Carte interactive des établissements de santé"></div>
+  <div class="voile" aria-hidden="true"></div>
+
+  <!-- Panneau Filtres -->
+  <section class="flotant flotant--filtres" aria-label="Filtres">
+    <header class="flotant-entete">
+      <span class="glyphe" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>
+      </span>
+      <h2>Filtres</h2>
+      <button type="button" class="fermer" data-masquer="filtres" aria-label="Fermer le panneau Filtres">&times;</button>
+    </header>
+
+    <div class="flotant-corps">
+      <div class="champ">
+        <label for="filtre-departement">Département</label>
+        <select id="filtre-departement">
+          <option value="">Tous les départements</option>
+        </select>
+      </div>
+
+      <hr class="separateur">
+
+      <div class="champ">
+        <label id="label-type">Type d'établissement</label>
+        <div role="group" aria-labelledby="label-type">
+          <label class="case">
+            <input type="checkbox" id="filtre-type-tous" checked>
+            <span class="texte">Tous les établissements</span>
+          </label>
+          <label class="case">
+            <input type="checkbox" id="filtre-type-urgences">
+            <span class="texte">Avec service d'urgences
+              <span class="note">Établissements déclarant « yes » ou « limited »</span>
+            </span>
+          </label>
+          <label class="case desactive" id="case-garde">
+            <input type="checkbox" id="filtre-type-garde" disabled>
+            <span class="texte">De garde
+              <span class="note">Aucune donnée de garde dans les sources</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <hr class="separateur">
+
+      <button type="button" class="btn btn--primaire btn--bloc" id="btn-rechercher">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        Rechercher
+      </button>
+      <button type="button" class="lien-discret" id="btn-reinitialiser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        Réinitialiser
+      </button>
+
+      <p class="resume-filtre" id="resume-filtre" role="status" aria-live="polite"></p>
+
+      <!-- Légende de la rampe. Elle vit dans le panneau Filtres : c'est le
+           seul endroit où la couleur a besoin d'être expliquée, et cela évite
+           un cinquième bloc flottant qui concurrencerait la carte. -->
+      <div class="legende-carte" id="legende-carte">
+        <h2>Établissements par commune</h2>
+        <ul id="legende-classes"></ul>
+        <p class="legende-note">En gris : les communes hors du département filtré.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panneau Itinéraire -->
+  <section class="flotant flotant--route" id="flotant-route" aria-label="Calcul d'itinéraire">
+    <header class="flotant-entete">
+      <span class="glyphe" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19h6a4 4 0 0 0 0-8h-5a4 4 0 0 1 0-8h6"/></svg>
+      </span>
+      <h2>Calcul d'itinéraire</h2>
+      <button type="button" class="fermer" data-masquer="route" aria-label="Fermer le panneau Itinéraire">&times;</button>
+    </header>
+
+    <div class="flotant-corps">
+      <div class="champ">
+        <label for="route-depart">Point de départ</label>
+        <select id="route-depart">
+          <option value="">Ma position</option>
+        </select>
+      </div>
+
+      <div class="champ">
+        <label for="route-destination">Destination</label>
+        <select id="route-destination">
+          <option value="">Choisir un établissement…</option>
+        </select>
+      </div>
+
+      <button type="button" class="btn btn--primaire btn--bloc" id="btn-route">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 20-6-3V4l6 3"/><path d="m15 4 6 3v13l-6-3"/><path d="M9 7v13M15 7v13"/></svg>
+        Calculer l'itinéraire
+      </button>
+
+      <div class="resultat-route" id="route-resultat" hidden>
+        <dl>
+          <dt>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 9 12l4 3 7-9"/><path d="M17 6h3v3"/></svg>
+            Distance
+          </dt>
+          <dd id="route-distance">—</dd>
+          <dt>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+            Durée estimée
+          </dt>
+          <dd id="route-duree">—</dd>
+        </dl>
+        <a class="btn btn--succes btn--bloc" id="route-google" href="#" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+          Ouvrir dans Google Maps
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Liste des établissements -->
+  <section class="flotant flotant--liste" aria-label="Liste des établissements">
+    <p class="compteur" id="compteur-filtre" role="status" aria-live="polite">—</p>
+    <div class="liste" id="liste-hopitaux"></div>
+  </section>
+
+  <!-- Filtres rapides -->
+  <div class="filtres-rapides" id="filtres" role="group" aria-label="Filtrer les établissements">
+    <button type="button" data-filtre="tous" class="actif" aria-pressed="true">
+      <span class="pastille"></span> Tous
+    </button>
+    <button type="button" data-filtre="urgences" aria-pressed="false">
+      <span class="pastille"></span> Urgences
+    </button>
+    <button type="button" data-filtre="garde" aria-pressed="false" disabled
+            title="Aucun champ de garde dans les données sources">
+      <span class="pastille"></span> De garde
+    </button>
+  </div>
+
+  <div class="bouton-position">
+    <button type="button" class="btn btn--primaire btn--proche" id="btn-position">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>
+      Hôpital le plus proche
+    </button>
+  </div>
+
+  <div class="controles-carte">
+    <button type="button" class="controle" id="zoom-plus" aria-label="Zoomer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <button type="button" class="controle" id="zoom-moins" aria-label="Dézoomer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>
+    </button>
+    <button type="button" class="controle" id="recentre" aria-label="Revenir à la vue d'ensemble de la France">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>
+    </button>
+    <button type="button" class="controle" id="btn-fond" aria-pressed="true"
+            title="Fond de carte sobre — cliquer pour le fond détaillé">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg>
+    </button>
+  </div>
+
+  <div id="infobulle" aria-hidden="true"></div>
+
+  <!-- Fiches générées par ui.js -->
+  <section id="panneau-proche" class="volet" aria-label="Établissement le plus proche" aria-live="polite"></section>
+  <section id="panneau-itineraire" class="volet" aria-label="Itinéraire"></section>
+  <section id="fiche-hopital" class="volet" aria-label="Fiche de l'établissement"></section>
+  <section id="fiche-commune" class="volet" aria-label="Fiche de la commune"></section>
+
+  <!-- Sélecteur de rayon, masqué : la distance se règle dans la liste -->
+  <div class="vh">
+    <label for="rayon">Rayon de recherche</label>
+    <select id="rayon">
+      <option value="">Tout le pays</option>
+      <option value="5">5 km</option>
+      <option value="10" selected>10 km</option>
+      <option value="25">25 km</option>
+      <option value="50">50 km</option>
+    </select>
+  </div>
+</div>
+
+<!-- Conteneurs globaux -->
+<div id="notifications" aria-live="polite" aria-atomic="false"></div>
+
+<div id="chargement" role="status" aria-live="polite">
+  <div class="squelette" aria-hidden="true"></div>
+  <div id="chargement-texte">Chargement des établissements de santé…</div>
+</div>
+
+<script src="../vendor/leaflet.js"></script>
+<script src="../vendor/leaflet.markercluster.js"></script>
+<script src="../js/data-manager.js"></script>
+<script src="../js/routing.js"></script>
+<script src="../js/map-view.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/parcours.js"></script>
+<script src="../js/app.js"></script>
+</body>
+</html>
