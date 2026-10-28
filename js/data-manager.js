@@ -271,7 +271,8 @@
         }
       } catch (e) {
         this.erreurs.push(`${base} : ${e.message}`);
-        let features = [], source = base;
+        features = [];
+        source = base;
         try {
           const repli = await this._essayer(ENDPOINTS.communesFallback);
           features = repli.features;
