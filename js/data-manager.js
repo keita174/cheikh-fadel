@@ -287,12 +287,16 @@
       }
 
       const communes = [];
-      for (const f of features) {
-        const c = normalizeCommune(f, communes.length);
-        if (!c.geometry || !c.code) continue;
-        c._bbox = this._bbox(c.geometry);
-        c.centre = this._centre(c.geometry);
-        communes.push(c);
+      try {
+        for (const f of features) {
+          const c = normalizeCommune(f, communes.length);
+          if (!c.geometry || !c.code) continue;
+          c._bbox = this._bbox(c.geometry);
+          c.centre = this._centre(c.geometry);
+          communes.push(c);
+        }
+      } catch (e) {
+        this.erreurs.push(`communes : ${e.message}`);
       }
 
       this.communes = communes;
