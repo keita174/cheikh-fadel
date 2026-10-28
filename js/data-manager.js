@@ -214,16 +214,23 @@
     async _essayer(urls) {
       let dernier = null;
       for (const url of urls) {
-        try {
-          const r = await fetch(url, { cache: 'no-store' });
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          const json = await r.json();
-          const feats = enFeatures(json);
-          if (feats.length) return { url, features: feats, erreur: json.error || null };
-          dernier = new Error(json.error || `${url} : aucune entité renvoyée`);
-        } catch (e) {
-          dernier = e;
+        let valeur = null;
+        // Un nouvel essai sur le même fichier : un échec réseau transitoire
+        // ne doit pas faire échouer tout le chargement.
+        for (let essai = 1; essai <= 2; essai++) {
+          try {
+            const r = await fetch(url, { cache: 'no-store' });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const json = await r.json();
+            const feats = enFeatures(json);
+            if (feats.length) { valeur = { url, features: feats, erreur: json.error || null }; break; }
+            dernier = new Error(json.error || `${url} : aucune entité renvoyée`);
+            valeur = null;
+          } catch (e) { dernier = e; }
+          if (valeur) break;
+          if (essai === 1) await new Promise(resolve => setTimeout(resolve, 250));
         }
+        if (valeur) return valeur;
       }
       throw dernier || new Error('aucune source disponible');
     },
